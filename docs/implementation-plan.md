@@ -213,6 +213,27 @@ with a shared `correlationId`, across 9 event types and 30 days, with about 27 i
 **Verify** typecheck/lint/build pass; shell renders at mobile and desktop widths; smoke test for
 routing and the 404 page.
 
+**Outcome ✅** 23 web tests (Vitest + Testing Library + MSW) pass, stable over repeated runs. The shell was
+checked in the browser at desktop and 375 px widths: collapsed icon sidebar, mobile drawer that closes on
+navigation, and the 404 page inside the shell. Deviations and findings:
+
+- The client is `apiGet(path)`, with paths matching the OpenAPI keys (`/api/v1/...`). `VITE_API_BASE_URL`
+  is the API **origin** (default empty = same origin via the Vite proxy or nginx). There is no POST
+  helper yet, because the UI does not write.
+- The sidebar footer shows live API and database status from `/api/v1/health` (a 503 report is treated
+  as data, not an error).
+- Kept the shadcn `sidebar` component but removed its cookie write (a Next.js SSR feature that nothing
+  reads in this SPA) and its redundant hook dependencies, both flagged by Biome. Removed `next-themes`,
+  pulled in only by `sonner`, since there is a single light theme.
+- Tests caught a nested `<main>` (shadcn's `SidebarInset` already renders `main`). The content wrapper
+  is now a `div`.
+- MSW 3 renamed `onUnhandledRequest` to `onUnhandledFrame`. The old option was silently ignored, so
+  unmocked requests only warned. It is fixed and verified: unmocked requests now fail the test.
+- A flaky `CopyButton` test (about 1 in 7 runs) came from Radix tooltips needing `ResizeObserver`, which
+  jsdom lacks. A test-only polyfill fixed it: 0 failures in 20 runs.
+- **Open:** the production JS bundle is 514 kB (Vite warns above 500 kB). Phase 6 adds route-level code
+  splitting when the real pages, with charts and table, land.
+
 ## Phase 6 — Dashboard and audit events UI
 
 **Build**

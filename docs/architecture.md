@@ -362,7 +362,9 @@ different configuration (for example, an unreachable database to test the 503 he
 | `LOG_LEVEL`         | no         | `log`                              | Nest logger level                                       |
 | `TEST_DATABASE_URL` | tests only | —                                  | Integration-test database; its name must end in `_test` |
 
-Web: `VITE_API_BASE_URL` (optional, defaults to `/api`, which is same-origin through the dev proxy or nginx).
+Web: `VITE_API_BASE_URL` (optional): the API **origin**, e.g. `http://localhost:3000`. It defaults to
+empty, meaning same origin through the Vite dev proxy or nginx. Request paths match the OpenAPI keys
+(`/api/v1/...`).
 
 ### 4.8 Security posture (MVP)
 
