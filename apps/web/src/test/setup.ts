@@ -26,6 +26,12 @@ if (typeof window.ResizeObserver === 'undefined') {
   };
 }
 
+// Radix Select relies on pointer capture and scrollIntoView, which jsdom does not implement.
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.setPointerCapture ??= () => undefined;
+Element.prototype.releasePointerCapture ??= () => undefined;
+Element.prototype.scrollIntoView ??= () => undefined;
+
 // Any request without a handler fails the test instead of silently hitting the network.
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {

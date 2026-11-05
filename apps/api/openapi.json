@@ -108,7 +108,8 @@
             "in": "query",
             "schema": {
               "minimum": 1,
-              "default": 1
+              "default": 1,
+              "type": "integer"
             }
           },
           {
@@ -119,7 +120,7 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20,
-              "type": "number"
+              "type": "integer"
             }
           },
           {

@@ -412,7 +412,7 @@ export interface operations {
     AuditEventsController_list_v1: {
         parameters: {
             query?: {
-                page?: unknown;
+                page?: number;
                 limit?: number;
                 /** @description Case-insensitive substring match on description, actor email/name/id, resource id, action and correlation id. */
                 search?: string;

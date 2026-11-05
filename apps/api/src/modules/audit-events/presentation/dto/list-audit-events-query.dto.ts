@@ -30,13 +30,14 @@ import {
  * Validators are ordered bottom-up (basic checks nearest the property); see CreateAuditEventDto.
  */
 export class ListAuditEventsQueryDto {
-  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @ApiPropertyOptional({ type: 'integer', minimum: 1, default: 1 })
   @Type(() => Number)
   @Min(1)
   @IsInt()
-  page = 1;
+  page: number = 1;
 
   @ApiPropertyOptional({
+    type: 'integer',
     minimum: 1,
     maximum: PAGINATION.maxLimit,
     default: PAGINATION.defaultLimit,

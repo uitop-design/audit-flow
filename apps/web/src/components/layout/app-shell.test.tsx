@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderRoute } from '@/test/render';
 
@@ -16,9 +16,10 @@ describe('AppShell', () => {
   it('navigates between pages from the sidebar', async () => {
     const { user, router } = renderRoute('/');
 
-    await user.click(screen.getByRole('link', { name: 'Audit events' }));
+    await user.click(await screen.findByRole('link', { name: 'Audit events' }));
 
-    expect(router.state.location.pathname).toBe('/events');
+    // Pages are lazy-loaded, so the navigation completes asynchronously.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/events'));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Audit events' }),
     ).toBeInTheDocument();
@@ -29,10 +30,10 @@ describe('AppShell', () => {
     );
   });
 
-  it('links to the API reference in a new tab', () => {
+  it('links to the API reference in a new tab', async () => {
     renderRoute('/');
 
-    const link = screen.getByRole('link', { name: /API reference/ });
+    const link = await screen.findByRole('link', { name: /API reference/ });
     expect(link).toHaveAttribute('href', 'http://localhost:3000/api/docs');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -41,16 +42,17 @@ describe('AppShell', () => {
   it('shows a not-found page inside the shell for unknown routes', async () => {
     const { user, router } = renderRoute('/does/not/exist');
 
-    const main = screen.getByRole('main');
+    const main = await screen.findByRole('main');
     expect(within(main).getByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
 
     await user.click(within(main).getByRole('link', { name: 'Back to dashboard' }));
-    expect(router.state.location.pathname).toBe('/');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
   });
 
   it('toggles the sidebar from the header', async () => {
     const { user, container } = renderRoute('/');
+    await screen.findByRole('heading', { level: 1, name: 'Dashboard' });
     const sidebar = container.querySelector('[data-slot="sidebar"][data-state]');
     expect(sidebar).toHaveAttribute('data-state', 'expanded');
 

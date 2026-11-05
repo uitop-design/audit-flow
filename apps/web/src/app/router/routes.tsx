@@ -1,7 +1,5 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AppShell } from '@/components/layout/app-shell';
-import { AuditEventsPage } from '@/features/audit-events/pages/audit-events-page';
-import { DashboardPage } from '@/features/dashboard/pages/dashboard-page';
 import { NotFoundPage } from './not-found-page';
 import { RouteErrorPage } from './route-error-page';
 import type { RouteHandle } from './route-handle';
@@ -14,14 +12,20 @@ export const routes: RouteObject[] = [
         // Pathless boundary: errors render inside the shell, so navigation stays available.
         errorElement: <RouteErrorPage />,
         children: [
+          // Feature pages load on demand, so charts and the data table are not in the initial bundle.
           {
             index: true,
-            element: <DashboardPage />,
+            lazy: async () => ({
+              Component: (await import('@/features/dashboard/pages/dashboard-page')).DashboardPage,
+            }),
             handle: { title: 'Dashboard' } satisfies RouteHandle,
           },
           {
             path: 'events',
-            element: <AuditEventsPage />,
+            lazy: async () => ({
+              Component: (await import('@/features/audit-events/pages/audit-events-page'))
+                .AuditEventsPage,
+            }),
             handle: { title: 'Audit events' } satisfies RouteHandle,
           },
           {

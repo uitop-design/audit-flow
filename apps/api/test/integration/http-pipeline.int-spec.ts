@@ -196,6 +196,23 @@ describe('HTTP pipeline', () => {
       expect(response.body.paths).toHaveProperty('/api/v1/health');
     });
 
+    it('declares a type for every parameter, so generated client types are precise', async () => {
+      const response = await http().get('/api/docs-json').expect(200);
+      type Parameter = { name: string; schema?: { type?: string; $ref?: string } };
+      const paths: Record<string, Record<string, { parameters?: Parameter[] }>> = response.body
+        .paths;
+
+      const untyped = Object.entries(paths).flatMap(([path, operations]) =>
+        Object.entries(operations).flatMap(([method, operation]) =>
+          (operation.parameters ?? [])
+            .filter((parameter) => !parameter.schema?.type && !parameter.schema?.$ref)
+            .map((parameter) => `${method.toUpperCase()} ${path} ${parameter.name}`),
+        ),
+      );
+
+      expect(untyped).toEqual([]);
+    });
+
     it('serves Swagger UI', async () => {
       const response = await http().get('/api/docs').expect(200);
 

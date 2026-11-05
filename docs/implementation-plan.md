@@ -255,6 +255,34 @@ navigation, and the 404 page inside the shell. Deviations and findings:
 URL after debounce and refetches; selecting a filter resets page; clear filters; sort header toggles
 `sortBy/sortOrder`; dashboard empty state.
 
+**Outcome ✅** 67 web tests pass (stable over repeated runs); API tests unchanged plus a new contract
+guard. Verified in the browser on real seed data at desktop and 375 px widths, and on the production
+build via `vite preview`. Deviations and findings:
+
+- **Row click to open details moves to Phase 7**, together with the details route. Recent-activity items
+  will link there too.
+- A third empty state, **"page past the end"** (with "Go to last page"), handles a stale `page` in a
+  shared URL. Without it, that case looked like "no events match".
+- **Contract bug fixed at the source.** The generated type for `page` was `unknown`, because the API DTO
+  had an unannotated `page = 1` with no Swagger type. The DTO is now typed and an API integration test
+  asserts that every OpenAPI parameter declares a type.
+- **Sorting bugs found by tests and the browser.** TanStack v8 only sorts columns that have an accessor
+  (`id`-only columns ignored clicks), and it inferred the first direction from the first row's value,
+  which flipped to descending when that value was `null`. Columns now use `accessorKey` with an
+  explicit `sortDescFirst`, and the test reproduces the null-first-row case.
+- **Layout.** `SidebarInset` needed `min-w-0`; without it the table's minimum width widened the whole
+  page. Navigations now reset scroll (`ScrollRestoration`).
+- **Vendored shadcn fixes (flagged by Biome, fixed rather than suppressed):** calendar slot components
+  were created inside render (remounting every day cell), so they moved to module level. The chart
+  injected CSS through `dangerouslySetInnerHTML`, which is now inline custom properties. Chart items used
+  index keys, now series keys. Removed an unused direct `date-fns` dependency.
+- **Bundle.** Feature pages are lazy routes and React/router are a separate vendor chunk. No chunk exceeds
+  500 kB now: entry 203 kB, vendor 317 kB, dashboard 351 kB (mostly Recharts), events 299 kB. The total JS
+  for the first page is unchanged, about 520 kB; the gains are caching and not loading the other page's
+  code.
+- The date filter is an inclusive day range in the viewer's time zone (URL `from`/`to` as `YYYY-MM-DD`),
+  converted to the API's half-open instant range when querying. Tests pin `TZ=UTC`.
+
 ## Phase 7 — Event details UI
 
 **Build**

@@ -67,6 +67,16 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --success: oklch(0.627 0.17 149);
+  /* Categorical hues for event types: muted, distinguishable, used as small accents only. */
+  --category-1: oklch(0.62 0.14 255);
+  --category-2: oklch(0.64 0.13 160);
+  --category-3: oklch(0.68 0.14 75);
+  --category-4: oklch(0.6 0.16 25);
+  --category-5: oklch(0.58 0.15 300);
+  --category-6: oklch(0.66 0.11 200);
+  --category-7: oklch(0.62 0.13 340);
+  --category-8: oklch(0.6 0.02 260);
+  --category-9: oklch(0.62 0.12 125);
   --warning: oklch(0.769 0.165 70);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
