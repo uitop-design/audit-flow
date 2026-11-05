@@ -1,0 +1,28 @@
+{
+  "name": "auditflow",
+  "private": true,
+  "description": "Audit log and activity tracking platform",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm --recursive build",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "pnpm --recursive test",
+    "db:up": "docker compose up --detach --wait postgres",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @auditflow/api db:generate",
+    "db:migrate": "pnpm --filter @auditflow/api db:migrate",
+    "db:deploy": "pnpm --filter @auditflow/api db:deploy"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.5"
+  }
+}

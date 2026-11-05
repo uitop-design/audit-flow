@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+
+onlyBuiltDependencies:
+  - "@biomejs/biome"
+  - "@nestjs/core"
+  - "@prisma/engines"
+  - "@swc/core"
+  - esbuild
+  - prisma

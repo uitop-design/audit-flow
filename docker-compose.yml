@@ -1,0 +1,25 @@
+name: auditflow
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-auditflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-auditflow}
+      POSTGRES_DB: ${POSTGRES_DB:-auditflow}
+    ports:
+      # Host port defaults to 5433 so it does not clash with a locally installed PostgreSQL.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      # PostgreSQL 18 images keep data under /var/lib/postgresql/<major>/, so mount the parent.
+      - postgres-data:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=$${POSTGRES_USER} --dbname=$${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
