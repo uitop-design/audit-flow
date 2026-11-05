@@ -8,27 +8,43 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
+    "test": "pnpm test:unit && pnpm test:integration",
+    "test:unit": "node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --selectProjects unit",
+    "test:integration": "pnpm db:test:prepare && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --selectProjects integration --runInBand",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "db:test:prepare": "prisma migrate deploy --config prisma.test.config.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.3.3",
     "@nestjs/core": "^12.3.3",
     "@nestjs/platform-express": "^12.3.3",
+    "@nestjs/swagger": "^12.1.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "express": "5.3.0",
+    "helmet": "^8.3.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.11",
     "@nestjs/schematics": "^12.0.12",
+    "@nestjs/testing": "^12.3.3",
     "@swc/cli": "^0.8.2",
     "@swc/core": "^1.16.22",
+    "@swc/jest": "^0.2.39",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.19.2",
+    "@types/supertest": "^7.2.1",
+    "jest": "^30.5.2",
     "prisma": "7.10.1",
+    "supertest": "^7.3.1",
     "typescript": "~6.0.3"
   }
 }

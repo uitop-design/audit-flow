@@ -58,12 +58,14 @@ AuditFlow/
 │   │   ├── src/
 │   │   │   ├── common/
 │   │   │   │   ├── decorators/       # e.g. @ApiPaginatedResponse
+│   │   │   │   ├── dto/              # shared Swagger DTOs (ErrorResponseDto)
 │   │   │   │   ├── filters/          # global exception filter → uniform error body
-│   │   │   │   ├── interceptors/     # request logging (no bodies)
-│   │   │   │   ├── middleware/       # request id
+│   │   │   │   ├── http/             # small request helpers
+│   │   │   │   ├── logging/          # logger factory (JSON in production)
+│   │   │   │   ├── middleware/       # request id, request logging (no bodies), JSON body parser
 │   │   │   │   ├── pipes/            # validation pipe factory (field-level errors)
 │   │   │   │   └── validators/       # @IsJsonObject, @MaxJsonBytes
-│   │   │   ├── config/               # env schema + typed AppConfig
+│   │   │   ├── config/               # env schema, typed AppConfig, AppConfigModule, .env loader
 │   │   │   ├── database/             # PrismaService, DatabaseModule
 │   │   │   ├── generated/prisma/     # Prisma client output (gitignored)
 │   │   │   ├── modules/
@@ -76,6 +78,7 @@ AuditFlow/
 │   │   │   │   └── health/
 │   │   │   ├── app.module.ts
 │   │   │   ├── bootstrap.ts          # shared app setup (used by main.ts and tests)
+│   │   │   ├── swagger.ts            # OpenAPI document + Swagger UI
 │   │   │   └── main.ts
 │   │   ├── test/
 │   │   │   ├── integration/          # supertest against real Postgres
@@ -174,7 +177,12 @@ justify them. Mapping is explicit functions.
 
 ### 4.2 Request lifecycle
 
-1. `RequestIdMiddleware` reuses a valid incoming `X-Request-Id` or generates one, and echoes it in the response.
+1. Express-level middleware runs first, in this order:
+   - the request-id middleware reuses a valid incoming `X-Request-Id` or generates one, and echoes it;
+   - the request logger registers a completion hook;
+   - helmet and CORS;
+   - the JSON body parser (128 KB limit), which turns parser failures into `400`/`413`/`415` with
+     fixed messages instead of raw parser text.
 2. Global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`) validates body and query DTOs.
    Unknown properties are rejected, including client attempts to set `id` or `createdAt`.
 3. Controller maps the DTO to a domain input and calls one use case.
@@ -183,8 +191,10 @@ justify them. Mapping is explicit functions.
 6. Any thrown error goes through `AllExceptionsFilter`, which produces the uniform error body
    (see `api-design.md`). Unknown errors are logged with stack and request id, then returned as a
    generic 500 with no internals.
-7. `LoggingInterceptor` logs method, path, status, duration and request id. It **never logs bodies**,
-   because audit payloads may contain personal data.
+7. When the response finishes, the request logger writes method, path, status, duration and request id.
+   It **never logs bodies or query strings**, because audit payloads and search terms may contain
+   personal data. It is middleware rather than an interceptor so that 404s and body-parser rejections,
+   which never reach a route handler, are logged too.
 
 ### 4.3 Domain model
 
@@ -322,19 +332,27 @@ Notes:
 
 ### 4.7 Configuration
 
-`@nestjs/config` loads the root `.env`. A class-validator schema (`config/env.schema.ts`) validates it
-at startup, and the process exits with a readable error listing every invalid variable. Using
-class-validator here, as the API already does elsewhere, avoids adding Zod to the backend. The rest of
-the app depends on a typed `AppConfig` and never reads `process.env` directly.
+`main.ts` loads the root `.env` (existing variables win) and validates it against a class-validator
+schema (`config/env.schema.ts`). If anything is invalid, the process exits with code 1 and a readable
+list of every invalid variable. The validated, frozen `AppConfig` is passed explicitly to
+`AppModule.forRoot(config)` and injected by class token, so the rest of the app never reads
+`process.env`. Using class-validator here, as the API already does elsewhere, avoids adding Zod to the
+backend.
 
-| Variable          | Required | Default                            | Purpose                                           |
-| ----------------- | -------- | ---------------------------------- | ------------------------------------------------- |
-| `NODE_ENV`        | no       | `development`                      | `development` \| `test` \| `production`           |
-| `PORT`            | no       | `3000`                             | API port                                          |
-| `DATABASE_URL`    | **yes**  | —                                  | PostgreSQL connection string                      |
-| `CORS_ORIGINS`    | no       | `http://localhost:5173`            | Comma-separated explicit allow-list; `*` rejected |
-| `SWAGGER_ENABLED` | no       | `true` (non-prod) / `false` (prod) | Serve `/api/docs`                                 |
-| `LOG_LEVEL`       | no       | `log`                              | Nest logger level                                 |
+_Decision — no `@nestjs/config`._ `ConfigModule.forRoot()` reads and validates the environment when
+the module file is imported. That makes it awkward for integration tests to build the app with a
+different configuration (for example, an unreachable database to test the 503 health response). A
+~60-line config module created at startup is simpler and fully testable.
+
+| Variable            | Required   | Default                            | Purpose                                                 |
+| ------------------- | ---------- | ---------------------------------- | ------------------------------------------------------- |
+| `NODE_ENV`          | no         | `development`                      | `development` \| `test` \| `production`                 |
+| `PORT`              | no         | `3000`                             | API port                                                |
+| `DATABASE_URL`      | **yes**    | —                                  | PostgreSQL connection string                            |
+| `CORS_ORIGINS`      | no         | `http://localhost:5173`            | Comma-separated explicit allow-list; `*` rejected       |
+| `SWAGGER_ENABLED`   | no         | `true` (non-prod) / `false` (prod) | Serve `/api/docs`                                       |
+| `LOG_LEVEL`         | no         | `log`                              | Nest logger level                                       |
+| `TEST_DATABASE_URL` | tests only | —                                  | Integration-test database; its name must end in `_test` |
 
 Web: `VITE_API_BASE_URL` (optional, defaults to `/api`, which is same-origin through the dev proxy or nginx).
 
@@ -443,7 +461,7 @@ Checked against the npm registry on 2026-11-05. The table records deliberate dev
 | -------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Runtime  | Node 24 LTS, pnpm 10.28                                                                      | React Router 8 requires Node ≥ 22.22                                                                                        |
 | Language | TypeScript **6.0.x**                                                                         | TS 7 is `latest`, but ts-jest (`<7`), Nest CLI (`~6.0`) and `@nestjs/swagger` (`^5.5 \|\| ^6`) don't support it yet         |
-| API      | NestJS 12.3, `@nestjs/swagger` 12, `@nestjs/config` 12, class-validator 0.15, helmet         | ESM                                                                                                                         |
+| API      | NestJS 12.3 (Express 5), `@nestjs/swagger` 12, class-validator 0.15, helmet 8                | ESM                                                                                                                         |
 | ORM      | Prisma **7.10.1** + `@prisma/adapter-pg`                                                     | npm `latest` tag currently points to `8.0.0-rc.30`; we use the stable 7.x line                                              |
 | DB       | PostgreSQL 18 (Docker)                                                                       | Native `uuidv7()`; host port **5433** (5432 is commonly taken by a local Postgres)                                          |
 | Web      | React 19, Vite 8, `@vitejs/plugin-react` 6, Tailwind 4, shadcn CLI 4                         | shadcn `radix-nova` style (Radix primitives, Lucide, Geist font); `cn` package (shadcn's clsx + tailwind-merge replacement) |
@@ -454,8 +472,11 @@ Checked against the npm registry on 2026-11-05. The table records deliberate dev
 
 **Biome + NestJS gotcha:** Biome's `useImportType` rule would turn constructor-injected classes into
 type-only imports, which erases the runtime metadata Nest DI needs. That rule is disabled for
-`apps/api/**`, and parameter decorators are enabled in the parser. This is a scoped, explained override,
-not a suppression of real errors.
+`apps/api/**`, and parameter decorators are enabled in the parser. Type-only imports there are still
+enforced by TypeScript's `verbatimModuleSyntax`. Likewise, `noStaticOnlyClass` is disabled for
+`apps/api/**/*.module.ts`, because a Nest dynamic module must be a class with a static `forRoot()`
+(the class itself is the module token). These are scoped, explained overrides, not suppressions of
+real errors.
 
 ## 8. Architecture decision records (summary)
 
@@ -472,6 +493,8 @@ not a suppression of real errors.
 | 9   | Strict identifier format for `eventType`/`action`/`resourceType` (`SCREAMING_SNAKE_CASE`) | Free-form strings                               | Exact-match filters and facets stay clean; matches the brief's examples                      |
 | 10  | NestJS 12 (ESM) with Jest via SWC in ESM mode                                             | NestJS 11 (CJS) + classic ts-jest               | Current major; spike proved feasibility. Fallback: Nest 11 if a blocker appears in Phase 1–2 |
 | 11  | Custom health check (`SELECT 1`)                                                          | `@nestjs/terminus`                              | One dependency avoided for a single DB probe                                                 |
+| 12  | Own config module (`AppModule.forRoot(config)`)                                           | `@nestjs/config`                                | Config created at startup, so tests can build the app with their own; one dependency fewer   |
+| 13  | Request logging and JSON parsing as Express middleware                                    | Nest interceptor; `app.useBodyParser`           | Covers 404s and parser errors; parser failures get stable, client-safe messages              |
 
 ## 9. Known limitations (planned to be documented in README)
 

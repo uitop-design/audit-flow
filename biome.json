@@ -62,6 +62,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["apps/api/**/*.module.ts"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noStaticOnlyClass": "off"
+          }
+        }
+      }
     }
   ]
 }

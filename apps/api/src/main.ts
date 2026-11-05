@@ -1,14 +1,37 @@
 import 'reflect-metadata';
-import { Logger, VersioningType } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
+import { configureApp } from './bootstrap.js';
+import { createLogger } from './common/logging/create-logger.js';
+import { type AppConfig, ConfigValidationError, loadConfig } from './config/app-config.js';
+import { loadRootEnvFile } from './config/env-file.js';
+import { SWAGGER_PATH } from './swagger.js';
 
-// Phase 1 skeleton: validated configuration, security middleware and Swagger arrive in Phase 2.
-const app = await NestFactory.create(AppModule);
-app.setGlobalPrefix('api');
-app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
-app.enableShutdownHooks();
+function loadConfigOrExit(): AppConfig {
+  loadRootEnvFile();
+  try {
+    return loadConfig(process.env);
+  } catch (error) {
+    if (error instanceof ConfigValidationError) {
+      console.error(error.message);
+      process.exit(1);
+    }
+    throw error;
+  }
+}
 
-const port = Number(process.env.PORT ?? 3000);
-await app.listen(port);
-Logger.log(`API listening on http://localhost:${port}/api/v1`, 'Bootstrap');
+const config = loadConfigOrExit();
+const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(config), {
+  bodyParser: false,
+  logger: createLogger(config),
+});
+configureApp(app, config);
+await app.listen(config.port);
+
+const logger = new Logger('Bootstrap');
+logger.log(`API listening on http://localhost:${config.port}/api/v1`);
+if (config.swaggerEnabled) {
+  logger.log(`Swagger UI at http://localhost:${config.port}/${SWAGGER_PATH}`);
+}

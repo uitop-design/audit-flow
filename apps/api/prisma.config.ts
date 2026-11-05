@@ -1,12 +1,7 @@
-import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'prisma/config';
+import { loadRootEnvFile } from './src/config/env-file.js';
 
-// The monorepo keeps one .env at the root; in CI and containers variables come from the environment.
-const rootEnvFile = fileURLToPath(new URL('../../.env', import.meta.url));
-if (existsSync(rootEnvFile)) {
-  process.loadEnvFile(rootEnvFile);
-}
+loadRootEnvFile();
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

@@ -77,7 +77,7 @@ The brief's `pnpm db…` entries were truncated. They are interpreted as the `db
 **Build**
 
 - `config/`: env schema (class-validator), `AppConfig` provider, fail-fast startup with readable errors.
-- `database/`: `PrismaService` (adapter-pg pool, connect on init, disconnect on shutdown), `DatabaseModule`.
+- `database/`: `PrismaService` (adapter-pg pool, lazy connect, disconnect on shutdown), `DatabaseModule`.
 - `bootstrap.ts`: shared setup used by `main.ts` and tests (helmet, CORS allow-list, body limit,
   versioning, validation pipe, exception filter, interceptors, shutdown hooks).
 - `common/`: `RequestIdMiddleware`, `LoggingInterceptor` (no bodies), `AllExceptionsFilter`
@@ -96,6 +96,23 @@ The brief's `pnpm db…` entries were truncated. They are interpreted as the `db
   malformed JSON → 400 in the uniform shape; `X-Request-Id` echoed.
 
 **Exit** tests green, Swagger reachable, app refuses to start with an invalid env.
+
+**Outcome ✅** 29 unit and 18 integration tests pass. Deviations from the plan above:
+
+- No `@nestjs/config`: a small `AppConfig` module is created at startup (architecture §4.7, ADR 12).
+- Request logging is Express middleware, not an interceptor, so 404s and parser rejections are logged
+  too. JSON parsing is a wrapped `express.json()` that converts parser failures into fixed messages,
+  because Nest otherwise forwards raw parser text (ADR 13).
+- No Jest `globalSetup`: Jest loads it outside its module mapper. `pnpm test:integration` first runs
+  `prisma migrate deploy --config prisma.test.config.ts` (`db:test:prepare`), which uses the same
+  `_test` database-name guard as the tests.
+- `.env` loading uses `util.parseEnv` with explicit assignment, because `process.loadEnvFile()` does not
+  reach Jest's per-file `process.env` sandbox.
+- Nest's unknown-route message echoes the full URL, including the query string. It is normalised to
+  the path only, matching the `path` field and the logs.
+- Biome: `noStaticOnlyClass` is disabled for `*.module.ts` (Nest dynamic modules).
+- Manually verified: the built API refuses invalid env with exit code 1, and Swagger UI renders under
+  helmet's CSP with no console errors.
 
 ## Phase 3 — Audit event domain and API
 
