@@ -13,9 +13,10 @@
     "test:integration": "pnpm db:test:prepare && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --selectProjects integration --runInBand",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
-    "db:test:prepare": "prisma migrate deploy --config prisma.test.config.ts"
+    "db:test:prepare": "prisma migrate deploy --config prisma.test.config.ts",
+    "openapi:generate": "nest build && node dist/scripts/generate-openapi.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.3.3",

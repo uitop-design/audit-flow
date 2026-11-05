@@ -130,16 +130,19 @@ header backed by a unique column is the documented extension point.
 | `actorId`       | string            | —           | exact match                                                                                                                                                                     |
 | `source`        | string            | —           | exact match                                                                                                                                                                     |
 | `correlationId` | string            | —           | exact match (addition to the brief's list; backed by an index, used for "show related events")                                                                                  |
-| `dateFrom`      | ISO 8601 datetime | —           | inclusive lower bound on `createdAt`                                                                                                                                            |
-| `dateTo`        | ISO 8601 datetime | —           | **exclusive** upper bound; must be after `dateFrom`                                                                                                                             |
+| `dateFrom`      | ISO 8601 datetime | —           | inclusive lower bound on `createdAt`; must include a time zone (`Z` or `±hh:mm`)                                                                                                |
+| `dateTo`        | ISO 8601 datetime | —           | **exclusive** upper bound; must include a time zone and be later than `dateFrom`                                                                                                |
 | `sortBy`        | enum              | `createdAt` | `createdAt` \| `eventType` \| `action` \| `resourceType` \| `actorEmail` \| `source`                                                                                            |
 | `sortOrder`     | enum              | `desc`      | `asc` \| `desc`                                                                                                                                                                 |
 
 - All filters combine with AND.
 - Unknown query parameters are rejected with 400, so a typo such as `eventtype=` can't silently
   return unfiltered data.
+- Repeated parameters (`?eventType=A&eventType=B`) and empty values (`?eventType=`) are rejected with 400.
 - A `sortBy` outside the whitelist is a 400, never passed to the database.
-- Results always get a secondary sort on `id` in the same direction, so ordering stays stable across pages.
+- Ordering is always deterministic. Sorting by `createdAt` adds `id` in the same direction as a
+  tie-breaker. Any other field is followed by `createdAt DESC`, then `id DESC`. `actorEmail` sorts
+  events without an email last in both directions.
 - A `page` past the last page returns `200` with empty `data` and accurate `meta`.
 - Dates use a half-open interval `[dateFrom, dateTo)`. To filter "all of 5 November" in the UI, the web
   app sends `dateFrom=<local start of Nov 5>` and `dateTo=<local start of Nov 6>`, both converted to UTC.

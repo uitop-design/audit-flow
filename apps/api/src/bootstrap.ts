@@ -2,6 +2,7 @@ import { VersioningType } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { DEFAULT_API_VERSION, GLOBAL_PREFIX } from './common/http/api-path.js';
 import { createJsonBodyParser } from './common/middleware/json-body-parser.middleware.js';
 import {
   REQUEST_ID_HEADER,
@@ -32,8 +33,8 @@ export function configureApp(app: NestExpressApplication, config: AppConfig): vo
   });
   app.use(createJsonBodyParser(JSON_BODY_LIMIT));
 
-  app.setGlobalPrefix('api');
-  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  app.setGlobalPrefix(GLOBAL_PREFIX);
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: DEFAULT_API_VERSION });
   app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());
   app.enableShutdownHooks();

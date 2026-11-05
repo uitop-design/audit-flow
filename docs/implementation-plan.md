@@ -143,6 +143,24 @@ The brief's `pnpm db…` entries were truncated. They are interpreted as the `db
 
 **Exit** all endpoints match `api-design.md`, all tests green, `pnpm api:types` produces web types.
 
+**Outcome ✅** 130 unit and 83 integration tests pass. `pnpm api:types` writes `apps/api/openapi.json`
+and `apps/web/src/lib/api/schema.d.ts`; both are committed. Deviations and findings:
+
+- One `AuditEventService` instead of five use-case classes (architecture §4.1).
+- **Search escaping.** The literal-`%` test showed that Prisma's `contains` does not escape LIKE
+  wildcards: searching `%` matched every row. `escapeLikePattern()` fixes this.
+- **Validation messages.** A smoke test showed a missing `description` reporting a length error.
+  class-validator evaluates decorators bottom-up, so DTO decorators are ordered accordingly. Unit tests
+  pin the messages.
+- **Trigger SQLSTATE.** With `restrict_violation` (23001), Prisma reported a blocked `UPDATE` as
+  "Foreign key constraint violated". A follow-up migration (`…_immutability_trigger_default_sqlstate`)
+  switches the trigger to the default P0001, so the real reason ("append-only: UPDATE is not allowed")
+  reaches logs. It is a follow-up migration and not an edit of the applied one, so existing databases
+  upgrade without a reset.
+- Prisma 7's `migrate dev` no longer runs `generate`. `pnpm db:migrate` now runs both.
+- Read queries that combine statements (page + count, stats, facets) use `REPEATABLE READ`.
+- `dateFrom`/`dateTo` must carry a time zone, so their meaning never depends on the server's zone.
+
 ## Phase 4 — Seed data
 
 **Build**

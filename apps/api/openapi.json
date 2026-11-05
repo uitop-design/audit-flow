@@ -1,0 +1,900 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "HealthController_check_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "All checks passed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A check failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Report application health and database connectivity",
+        "tags": ["health"]
+      }
+    },
+    "/api/v1/audit-events": {
+      "post": {
+        "description": "Stores an immutable audit event. The server assigns `id` and `createdAt`; clients cannot set them. Intended for trusted producers only: protect this endpoint before production use.",
+        "operationId": "AuditEventsController_record_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAuditEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The recorded event",
+            "headers": {
+              "Location": {
+                "description": "URL of the new event",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body larger than 128 KB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Record an audit event",
+        "tags": ["audit-events"]
+      },
+      "get": {
+        "operationId": "AuditEventsController_list_v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match on description, actor email/name/id, resource id, action and correlation id.",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "required": false,
+            "in": "query",
+            "description": "Exact match",
+            "schema": {
+              "example": "USER",
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "description": "Exact match",
+            "schema": {
+              "example": "USER_UPDATED",
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceType",
+            "required": false,
+            "in": "query",
+            "description": "Exact match",
+            "schema": {
+              "example": "PROJECT",
+              "type": "string"
+            }
+          },
+          {
+            "name": "resourceId",
+            "required": false,
+            "in": "query",
+            "description": "Exact match",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "required": false,
+            "in": "query",
+            "description": "Exact match",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "required": false,
+            "in": "query",
+            "description": "Exact match",
+            "schema": {
+              "example": "admin-dashboard",
+              "type": "string"
+            }
+          },
+          {
+            "name": "correlationId",
+            "required": false,
+            "in": "query",
+            "description": "Exact match; finds every event of one operation.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "required": false,
+            "in": "query",
+            "description": "Inclusive lower bound on createdAt. Must include a time zone.",
+            "schema": {
+              "format": "date-time",
+              "example": "2026-11-01T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateTo",
+            "required": false,
+            "in": "query",
+            "description": "Exclusive upper bound on createdAt. Must include a time zone and be later than dateFrom.",
+            "schema": {
+              "format": "date-time",
+              "example": "2026-11-06T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "createdAt",
+              "type": "string",
+              "enum": ["createdAt", "eventType", "action", "resourceType", "actorEmail", "source"]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "desc",
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventListResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List audit events with filtering, sorting and pagination",
+        "tags": ["audit-events"]
+      }
+    },
+    "/api/v1/audit-events/stats": {
+      "get": {
+        "operationId": "AuditEventsController_stats_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventStatsResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Aggregate statistics for the dashboard",
+        "tags": ["audit-events"]
+      }
+    },
+    "/api/v1/audit-events/facets": {
+      "get": {
+        "operationId": "AuditEventsController_facets_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventFacetsResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Distinct values for filter options",
+        "tags": ["audit-events"]
+      }
+    },
+    "/api/v1/audit-events/{id}": {
+      "get": {
+        "operationId": "AuditEventsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id is not a UUID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No event with this id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one audit event",
+        "tags": ["audit-events"]
+      }
+    }
+  },
+  "info": {
+    "title": "AuditFlow API",
+    "description": "REST API for recording and querying immutable audit events.\n\n> **No authentication in this MVP.** All endpoints, including event ingestion, assume a trusted\n> network. Before exposing this API, protect ingestion with service-to-service credentials and\n> rate limiting, and protect read endpoints with operator authentication and access control.\n\nAudit events can contain personal data (emails, IP addresses, user agents, before/after snapshots).\nTreat responses as sensitive.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "DatabaseCheckDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["up", "down"],
+            "example": "up"
+          },
+          "latencyMs": {
+            "type": "number",
+            "example": 2,
+            "description": "Round-trip time of a trivial query"
+          }
+        },
+        "required": ["status"]
+      },
+      "HealthChecksDto": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/DatabaseCheckDto"
+          }
+        },
+        "required": ["database"]
+      },
+      "HealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok", "error"],
+            "example": "ok"
+          },
+          "checks": {
+            "$ref": "#/components/schemas/HealthChecksDto"
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "example": 512
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-11-05T14:03:22.418Z",
+            "format": "date-time"
+          }
+        },
+        "required": ["status", "checks", "uptimeSeconds", "timestamp"]
+      },
+      "ValidationIssueDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "example": "actorEmail"
+          },
+          "message": {
+            "type": "string",
+            "example": "actorEmail must be an email"
+          }
+        },
+        "required": ["field", "message"]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 400
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "message": {
+            "type": "string",
+            "example": "Request validation failed"
+          },
+          "details": {
+            "description": "Present only for validation errors",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssueDto"
+            }
+          },
+          "path": {
+            "type": "string",
+            "example": "/api/v1/audit-events"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "6f1c2b9e-1d2a-4c6f-9a51-0f3b8f8e2d11"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-11-05T14:03:22.418Z",
+            "format": "date-time"
+          }
+        },
+        "required": ["statusCode", "error", "message", "path", "requestId", "timestamp"]
+      },
+      "CreateAuditEventDto": {
+        "type": "object",
+        "properties": {
+          "eventType": {
+            "type": "string",
+            "example": "USER",
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "description": "Broad category of the event."
+          },
+          "action": {
+            "type": "string",
+            "example": "USER_UPDATED",
+            "maxLength": 100,
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "description": "What happened."
+          },
+          "resourceType": {
+            "type": "string",
+            "example": "USER",
+            "maxLength": 64,
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "description": "Kind of resource that was acted on."
+          },
+          "resourceId": {
+            "type": "string",
+            "nullable": true,
+            "example": "usr_123",
+            "maxLength": 255
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true,
+            "example": "usr_456",
+            "maxLength": 255
+          },
+          "actorEmail": {
+            "type": "string",
+            "nullable": true,
+            "format": "email",
+            "example": "admin@example.com",
+            "maxLength": 320
+          },
+          "actorName": {
+            "type": "string",
+            "nullable": true,
+            "example": "John Doe",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "example": "Updated user permissions",
+            "maxLength": 1000
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "example": {
+              "source": "admin-dashboard"
+            },
+            "description": "Free-form context. Defaults to {}. At most 16384 bytes as JSON."
+          },
+          "before": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "example": {
+              "role": "USER"
+            },
+            "description": "State before the change. At most 32768 bytes as JSON."
+          },
+          "after": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "example": {
+              "role": "ADMIN"
+            },
+            "description": "State after the change. At most 32768 bytes as JSON."
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true,
+            "example": "127.0.0.1",
+            "description": "IPv4 or IPv6"
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true,
+            "example": "Mozilla/5.0",
+            "maxLength": 512
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true,
+            "example": "req_abc123",
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Groups events that belong to one operation or request."
+          },
+          "source": {
+            "type": "string",
+            "example": "example-app",
+            "maxLength": 100,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "description": "The system that produced the event."
+          }
+        },
+        "required": ["eventType", "action", "resourceType", "description", "source"]
+      },
+      "AuditEventResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "019a5a3c-7e2b-7c41-9f0e-3b8d2a6c1f44"
+          },
+          "eventType": {
+            "type": "string",
+            "example": "USER"
+          },
+          "action": {
+            "type": "string",
+            "example": "USER_UPDATED"
+          },
+          "resourceType": {
+            "type": "string",
+            "example": "USER"
+          },
+          "resourceId": {
+            "type": "string",
+            "nullable": true,
+            "example": "usr_123"
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true,
+            "example": "usr_456"
+          },
+          "actorEmail": {
+            "type": "string",
+            "nullable": true,
+            "example": "admin@example.com"
+          },
+          "actorName": {
+            "type": "string",
+            "nullable": true,
+            "example": "John Doe"
+          },
+          "description": {
+            "type": "string",
+            "example": "Updated user permissions"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "example": {
+              "source": "admin-dashboard"
+            }
+          },
+          "before": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "example": {
+              "role": "USER"
+            }
+          },
+          "after": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "example": {
+              "role": "ADMIN"
+            }
+          },
+          "ipAddress": {
+            "type": "string",
+            "nullable": true,
+            "example": "127.0.0.1"
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true,
+            "example": "Mozilla/5.0"
+          },
+          "correlationId": {
+            "type": "string",
+            "nullable": true,
+            "example": "req_abc123"
+          },
+          "source": {
+            "type": "string",
+            "example": "example-app"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-05T14:03:22.418Z"
+          }
+        },
+        "required": [
+          "id",
+          "eventType",
+          "action",
+          "resourceType",
+          "resourceId",
+          "actorId",
+          "actorEmail",
+          "actorName",
+          "description",
+          "metadata",
+          "before",
+          "after",
+          "ipAddress",
+          "userAgent",
+          "correlationId",
+          "source",
+          "createdAt"
+        ]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          },
+          "total": {
+            "type": "number",
+            "example": 150
+          },
+          "totalPages": {
+            "type": "number",
+            "example": 8,
+            "description": "0 when there are no results"
+          }
+        },
+        "required": ["page", "limit", "total", "totalPages"]
+      },
+      "AuditEventListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEventResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": ["data", "meta"]
+      },
+      "EventTypeCountDto": {
+        "type": "object",
+        "properties": {
+          "eventType": {
+            "type": "string",
+            "example": "AUTH"
+          },
+          "count": {
+            "type": "number",
+            "example": 52
+          }
+        },
+        "required": ["eventType", "count"]
+      },
+      "DailyEventCountDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-11-05",
+            "description": "UTC calendar day"
+          },
+          "count": {
+            "type": "number",
+            "example": 23
+          }
+        },
+        "required": ["date", "count"]
+      },
+      "AuditEventStatsResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalEvents": {
+            "type": "number",
+            "example": 184
+          },
+          "eventsLast24h": {
+            "type": "number",
+            "example": 23
+          },
+          "uniqueActors": {
+            "type": "number",
+            "example": 14,
+            "description": "Distinct non-null actorId values"
+          },
+          "topEventType": {
+            "nullable": true,
+            "description": "null when there are no events",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventTypeCountDto"
+              }
+            ]
+          },
+          "byEventType": {
+            "description": "Sorted by count, descending",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTypeCountDto"
+            }
+          },
+          "dailyVolume": {
+            "description": "Last 14 UTC days, oldest first, zero-filled",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyEventCountDto"
+            }
+          },
+          "recentEvents": {
+            "description": "The 5 most recent events",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEventResponseDto"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "totalEvents",
+          "eventsLast24h",
+          "uniqueActors",
+          "topEventType",
+          "byEventType",
+          "dailyVolume",
+          "recentEvents",
+          "generatedAt"
+        ]
+      },
+      "AuditEventFacetsResponseDto": {
+        "type": "object",
+        "properties": {
+          "eventTypes": {
+            "example": ["AUTH", "PROJECT", "USER"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actions": {
+            "example": ["PROJECT_CREATED", "USER_SIGNED_IN"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resourceTypes": {
+            "example": ["API_KEY", "PROJECT", "USER"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "example": ["admin-dashboard", "billing-service"],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["eventTypes", "actions", "resourceTypes", "sources"]
+      }
+    }
+  }
+}

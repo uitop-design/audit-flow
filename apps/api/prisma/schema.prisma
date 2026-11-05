@@ -1,4 +1,5 @@
-// Models are added in Phase 3. See docs/architecture.md §4.5 for the target schema.
+// Audit events are append-only. Besides the model below, the migration adds CHECK constraints and a
+// trigger that rejects UPDATE and DELETE; see docs/architecture.md §4.4–4.5.
 
 generator client {
   provider               = "prisma-client"
@@ -11,4 +12,32 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model AuditEvent {
+  id            String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  eventType     String   @map("event_type") @db.VarChar(64)
+  action        String   @db.VarChar(100)
+  resourceType  String   @map("resource_type") @db.VarChar(64)
+  resourceId    String?  @map("resource_id") @db.VarChar(255)
+  actorId       String?  @map("actor_id") @db.VarChar(255)
+  actorEmail    String?  @map("actor_email") @db.VarChar(320)
+  actorName     String?  @map("actor_name") @db.VarChar(200)
+  description   String   @db.VarChar(1000)
+  metadata      Json     @default("{}") @db.JsonB
+  before        Json?    @db.JsonB
+  after         Json?    @db.JsonB
+  ipAddress     String?  @map("ip_address") @db.Inet
+  userAgent     String?  @map("user_agent") @db.VarChar(512)
+  correlationId String?  @map("correlation_id") @db.VarChar(128)
+  source        String   @db.VarChar(100)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([resourceType, resourceId])
+  @@index([correlationId])
+  @@map("audit_events")
 }

@@ -138,11 +138,7 @@ flowchart TB
     C[AuditEventsController] --> D[DTOs<br/>class-validator + Swagger]
   end
   subgraph application
-    R[RecordAuditEvent]
-    L[ListAuditEvents]
-    G[GetAuditEvent]
-    S[GetAuditEventStats]
-    F[GetAuditEventFacets]
+    SVC[AuditEventService<br/>record · list · getById · getStats · getFacets]
   end
   subgraph domain
     E[AuditEvent / NewAuditEvent]
@@ -153,27 +149,32 @@ flowchart TB
     PR[PrismaAuditEventRepository] --> PS[PrismaService]
   end
 
-  C --> R & L & G & S & F
-  R & L & G & S & F --> PORT
-  R --> E
-  L --> Q
+  C --> SVC
+  SVC --> PORT
+  SVC --> E
+  SVC --> Q
   PR -. implements .-> PORT
   PS --> PG[(PostgreSQL)]
 ```
 
-| Layer            | Responsibility                                                                                                  | May depend on                |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `presentation`   | HTTP: routes, DTO validation, status codes, Swagger, mapping DTO ⇄ domain                                       | application, domain          |
-| `application`    | One class per use case; orchestrates domain + repository; throws domain errors (e.g. `AuditEventNotFoundError`) | domain                       |
-| `domain`         | Plain TypeScript: entity types, invariants, query value objects, repository **interface**                       | nothing (no Nest, no Prisma) |
-| `infrastructure` | Prisma implementation of the port; row ⇄ entity mapping; SQL for aggregates                                     | domain, database             |
+| Layer            | Responsibility                                                                                                              | May depend on                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `presentation`   | HTTP: routes, DTO validation, status codes, Swagger, mapping DTO ⇄ domain                                                   | application, domain          |
+| `application`    | `AuditEventService`: the use cases; orchestrates domain + repository; throws domain errors (e.g. `AuditEventNotFoundError`) | domain                       |
+| `domain`         | Plain TypeScript: entity types, invariants, query value objects, repository **interface**                                   | nothing (no Nest, no Prisma) |
+| `infrastructure` | Prisma implementation of the port; row ⇄ entity mapping; SQL for aggregates                                                 | domain, database             |
 
 The domain layer stays free of Nest and Prisma, so it can be unit tested without a container.
-Use-case classes carry `@Injectable()` because they are wired by Nest. They depend on the port
-through an injection token, not on Prisma.
+The application service carries `@Injectable()` because Nest wires it. It depends on the port
+through an injection token, not on Prisma. Domain errors extend a framework-free `NotFoundError`,
+which the global exception filter maps to 404.
 
-_Decision — no CQRS buses, no generic base repository, no mapper library._ Five use cases do not
-justify them. Mapping is explicit functions.
+_Decision — one application service, not one class per use case._ The five use cases are each a few
+lines of orchestration, so separate classes would add files without adding clarity. If a use case
+grows real logic, it can be extracted without touching the controller's contract.
+
+_Decision — no CQRS buses, no generic base repository, no mapper library._ Mapping is explicit
+functions (`infrastructure/audit-event.mapper.ts`, `presentation/audit-event.presenter.ts`).
 
 ### 4.2 Request lifecycle
 
@@ -229,7 +230,7 @@ export interface AuditEventRepository {
   append(event: NewAuditEvent): Promise<AuditEvent>;
   findById(id: string): Promise<AuditEvent | null>;
   findPage(query: AuditEventQuery): Promise<Page<AuditEvent>>;
-  getStats(now: Date): Promise<AuditEventStats>;
+  getStatsSnapshot(): Promise<AuditEventStatsSnapshot>; // computed in SQL at the database's now()
   getFacets(): Promise<AuditEventFacets>;
 }
 ```
@@ -316,15 +317,21 @@ Notes:
 ### 4.6 Querying
 
 - Offset pagination (`page`, `limit ≤ 100`) because the brief requires `total`/`totalPages`.
-  `findMany` and `count` run in one `$transaction` so they see a consistent snapshot.
+  `findMany` and `count` run in one `REPEATABLE READ` transaction, so `data` and `total` come from the
+  same snapshot. Under the default `READ COMMITTED` each statement would see its own. The dashboard
+  aggregates and facets use the same isolation level.
 - Sorting goes through a **whitelist map** from public field names to Prisma `orderBy` clauses.
   A secondary `id` sort in the same direction guarantees stable ordering across pages.
 - Exact-match filters (`eventType`, `action`, `resourceType`, `actorId`, `resourceId`, `source`,
   `correlationId`) and a
   half-open time window `[dateFrom, dateTo)`.
 - `search` is a case-insensitive substring match across `description`, `actorEmail`, `actorName`,
-  `actorId`, `resourceId`, `action` and `correlationId`. `%`, `_` and `\` in user input are treated
-  literally (escaping verified by a test).
+  `actorId`, `resourceId`, `action` and `correlationId`. Prisma's `contains` does **not** escape LIKE
+  wildcards (verified by an integration test), so `escapeLikePattern()` escapes `\`, `%` and `_` and
+  they match literally.
+- Request validation stops at the first failing rule per field. class-validator evaluates property
+  decorators bottom-up, so DTOs put the most basic check (e.g. `@IsString`) closest to the property.
+  Unit tests pin the resulting messages (a missing field reports "must be a string", not a length rule).
 - Aggregates for the dashboard (counts, distinct actors, group-by, daily buckets) use Prisma
   `groupBy`/`count` where possible and `$queryRaw` tagged templates (parameterised) where not.
 - Nothing loads the full table into memory. Every list query is bounded by `limit`, and aggregates

@@ -1,5 +1,6 @@
 import { STATUS_CODES } from 'node:http';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { NotFoundError } from '../errors/not-found.error.js';
 import { RequestValidationException, type ValidationIssue } from '../pipes/validation.pipe.js';
 
 export interface ErrorResponseBody {
@@ -36,6 +37,9 @@ export interface ErrorResponse {
 export function toErrorResponse(exception: unknown, context: ErrorContext): ErrorResponse {
   if (exception instanceof RequestValidationException) {
     return build(HttpStatus.BAD_REQUEST, 'Request validation failed', context, exception.issues);
+  }
+  if (exception instanceof NotFoundError) {
+    return build(HttpStatus.NOT_FOUND, exception.message, context);
   }
   if (exception instanceof HttpException) {
     return build(exception.getStatus(), httpExceptionMessage(exception, context), context);

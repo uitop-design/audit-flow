@@ -29,6 +29,9 @@ export function createValidationPipe(): ValidationPipe {
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
+    // One message per field. class-validator evaluates decorators bottom-up, so DTOs place the most
+    // basic check (e.g. @IsString) closest to the property.
+    stopAtFirstError: true,
     validationError: { target: false, value: false },
     exceptionFactory: (errors) => new RequestValidationException(flattenValidationErrors(errors)),
   });
