@@ -16,7 +16,8 @@
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:test:prepare": "prisma migrate deploy --config prisma.test.config.ts",
-    "openapi:generate": "nest build && node dist/scripts/generate-openapi.js"
+    "openapi:generate": "nest build && node dist/scripts/generate-openapi.js",
+    "db:seed": "nest build && node dist/scripts/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.3.3",

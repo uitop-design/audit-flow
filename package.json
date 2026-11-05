@@ -21,7 +21,8 @@
     "db:generate": "pnpm --filter @auditflow/api db:generate",
     "db:migrate": "pnpm --filter @auditflow/api db:migrate",
     "db:deploy": "pnpm --filter @auditflow/api db:deploy",
-    "api:types": "pnpm --filter @auditflow/api openapi:generate && pnpm --filter @auditflow/web api:types"
+    "api:types": "pnpm --filter @auditflow/api openapi:generate && pnpm --filter @auditflow/web api:types",
+    "db:seed": "pnpm --filter @auditflow/api db:seed"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.5"

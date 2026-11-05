@@ -52,9 +52,8 @@ AuditFlow/
 │   ├── api/                          # NestJS 12 (ESM)
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma
-│   │   │   ├── migrations/
-│   │   │   └── seed/                 # deterministic demo data + reset-and-seed script
-│   │   ├── prisma.config.ts
+│   │   │   └── migrations/
+│   │   ├── prisma.config.ts          # + prisma.test.config.ts for the test database
 │   │   ├── src/
 │   │   │   ├── common/
 │   │   │   │   ├── decorators/       # e.g. @ApiPaginatedResponse
@@ -71,11 +70,13 @@ AuditFlow/
 │   │   │   ├── modules/
 │   │   │   │   ├── audit-events/
 │   │   │   │   │   ├── domain/           # AuditEvent, invariants, repository port, query types
-│   │   │   │   │   ├── application/      # use cases: record, list, get, stats, facets
+│   │   │   │   │   ├── application/      # AuditEventService: record, list, get, stats, facets
 │   │   │   │   │   ├── infrastructure/   # PrismaAuditEventRepository, row mappers
 │   │   │   │   │   ├── presentation/     # controller, request/response DTOs
 │   │   │   │   │   └── audit-events.module.ts
 │   │   │   │   └── health/
+│   │   │   ├── scripts/              # seed.ts, generate-openapi.ts (built, then run with node)
+│   │   │   ├── seed/                 # deterministic demo data: catalog, scenarios, generator, reseed
 │   │   │   ├── app.module.ts
 │   │   │   ├── bootstrap.ts          # shared app setup (used by main.ts and tests)
 │   │   │   ├── swagger.ts            # OpenAPI document + Swagger UI

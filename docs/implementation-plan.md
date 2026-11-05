@@ -165,7 +165,7 @@ and `apps/web/src/lib/api/schema.d.ts`; both are committed. Deviations and findi
 
 **Build**
 
-- `prisma/seed/`: catalogue of realistic scenarios (auth sign-in/out/failed/MFA, user lifecycle, project
+- `src/seed/`: catalogue of realistic scenarios (auth sign-in/out/failed/MFA, user lifecycle, project
   CRUD, member role changes, API key create/revoke/rotate, payment settings, resource create/delete,
   system jobs with null actor) with plausible before/after snapshots, IPs, user agents, correlation IDs
   shared across multi-step flows.
@@ -179,6 +179,23 @@ and `apps/web/src/lib/api/schema.d.ts`; both are committed. Deviations and findi
 
 **Verify** run twice and get the same count both times; spot-check filters and facets via `curl`; health still
 OK; an empty DB (after truncation) still serves the list, stats and facets correctly.
+
+**Outcome ✅** `pnpm db:seed` resets the table and inserts 180 events: 144 flows, 28 of them multi-step
+with a shared `correlationId`, across 9 event types and 30 days, with about 27 in the last 24 hours.
+142 unit and 87 integration tests pass. Deviations and findings:
+
+- The seed lives in `src/seed/` and the runner in `src/scripts/seed.ts`, not in `prisma/seed/`, so it
+  builds with the API's SWC setup and is unit-tested with Jest. `db:seed` builds, then runs it with node.
+- Rows are written with one `INSERT … SELECT FROM jsonb_to_recordset(…)` instead of `createMany`. That
+  lets each id be `uuidv7(createdAt - clock_timestamp())`, so the time inside the UUIDv7 equals
+  `createdAt` and id order equals time order, as for API-recorded events. A first version shifted
+  relative to `now()` (transaction start) and drifted 12–16 ms. The integration test now asserts zero drift.
+- A unit test runs every generated event through `CreateAuditEventDto` validation, so demo data can
+  never contain something the ingestion API would reject.
+- Demo identities use reserved example domains and RFC 5737 documentation IP ranges. Snapshots record
+  card brand/last four and API-key prefixes only, never secrets. A test checks JSON keys for credentials.
+- Verified manually: `NODE_ENV=production` refuses to seed (exit 1). The API responds correctly on an
+  empty table (`totalPages: 0`, `topEventType: null`, 14 zero-filled days).
 
 ## Phase 5 — Frontend foundation
 
