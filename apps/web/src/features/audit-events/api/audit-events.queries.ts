@@ -1,6 +1,7 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api/client';
 import type {
+  AuditEvent,
   AuditEventFacets,
   AuditEventList,
   AuditEventStats,
@@ -11,6 +12,7 @@ export const auditEventKeys = {
   all: ['audit-events'] as const,
   lists: () => [...auditEventKeys.all, 'list'] as const,
   list: (params: ListAuditEventsParams) => [...auditEventKeys.lists(), params] as const,
+  detail: (id: string) => [...auditEventKeys.all, 'detail', id] as const,
   stats: () => [...auditEventKeys.all, 'stats'] as const,
   facets: () => [...auditEventKeys.all, 'facets'] as const,
 };
@@ -22,6 +24,16 @@ export function auditEventListQuery(params: ListAuditEventsParams) {
       apiGet<AuditEventList>('/api/v1/audit-events', { query: params, signal }),
     // Keep showing the current page while the next one loads, so the table does not flash empty.
     placeholderData: keepPreviousData,
+  });
+}
+
+export function auditEventDetailQuery(id: string) {
+  return queryOptions({
+    queryKey: auditEventKeys.detail(id),
+    queryFn: ({ signal }) =>
+      apiGet<AuditEvent>(`/api/v1/audit-events/${encodeURIComponent(id)}`, { signal }),
+    // Audit events are immutable: once loaded, an event can never become stale.
+    staleTime: Number.POSITIVE_INFINITY,
   });
 }
 

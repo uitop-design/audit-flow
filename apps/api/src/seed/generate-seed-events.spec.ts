@@ -131,3 +131,14 @@ describe('createRandom', () => {
     expect(new Set(values)).toEqual(new Set([1, 2, 3]));
   });
 });
+
+describe('seed snapshots', () => {
+  it('describe the same fields before and after an update, so diffs show real changes', () => {
+    const updates = generateSeedEvents({ now: NOW }).filter((event) => event.before && event.after);
+
+    expect(updates.length).toBeGreaterThan(0);
+    for (const event of updates) {
+      expect(Object.keys(event.after ?? {}).sort()).toEqual(Object.keys(event.before ?? {}).sort());
+    }
+  });
+});

@@ -10,7 +10,10 @@ import {
 } from './catalog.js';
 import type { Random } from './random.js';
 
-/** One event within a flow. Actor fields default to the flow's actor. */
+/**
+ * One event within a flow. Actor fields default to the flow's actor. When both `before` and `after`
+ * are present they describe the same fields, so a diff shows what changed rather than what was omitted.
+ */
 export interface ScenarioStep {
   /** Seconds after the flow starts. */
   readonly offsetSeconds: number;
@@ -144,7 +147,7 @@ export const SCENARIOS: readonly Scenario[] = [
           resourceId: actor.id,
           description: 'Enabled two-factor authentication',
           source: 'web-app',
-          before: { mfaEnabled: false },
+          before: { mfaEnabled: false, method: null },
           after: { mfaEnabled: true, method: random.pick(['totp', 'webauthn']) },
         },
       ];
@@ -502,7 +505,7 @@ export const SCENARIOS: readonly Scenario[] = [
           description: `Revoked previous API key for ${project.name}`,
           source: 'web-app',
           before: { name: `${project.slug}-deploy`, prefix: oldPrefix, status: 'active' },
-          after: { status: 'revoked' },
+          after: { name: `${project.slug}-deploy`, prefix: oldPrefix, status: 'revoked' },
           metadata: { projectId: project.id, reason: 'rotation' },
         },
       ];
@@ -514,6 +517,7 @@ export const SCENARIOS: readonly Scenario[] = [
     weight: 2,
     build(random) {
       const project = random.pick(PROJECTS);
+      const prefix = keyPrefix(random);
       return [
         {
           offsetSeconds: 0,
@@ -524,8 +528,8 @@ export const SCENARIOS: readonly Scenario[] = [
           resourceId: `key_${random.hex(10)}`,
           description: `API key for ${project.name} expired after 90 days`,
           source: SYSTEM_SOURCES.scheduler,
-          before: { prefix: keyPrefix(random), status: 'active' },
-          after: { status: 'expired' },
+          before: { prefix, status: 'active' },
+          after: { prefix, status: 'expired' },
           metadata: { projectId: project.id, job: 'api-key-expiry' },
         },
       ];

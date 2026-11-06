@@ -1,4 +1,5 @@
 import { Bot } from 'lucide-react';
+import { Link, useLocation } from 'react-router';
 import type { AuditEvent } from '@/lib/api/types';
 import {
   formatCompactTimestamp,
@@ -48,10 +49,17 @@ export function ActorCell({ event }: { event: AuditEvent }) {
   );
 }
 
+/** The row's primary link: opens the event's details, keeping the current filters in the URL. */
 export function ActionCell({ event }: { event: AuditEvent }) {
+  const { search } = useLocation();
   return (
     <div className="grid min-w-0 gap-0.5">
-      <span className="truncate font-medium text-sm">{humanizeIdentifier(event.action)}</span>
+      <Link
+        to={{ pathname: `/events/${event.id}`, search }}
+        className="truncate font-medium text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+      >
+        {humanizeIdentifier(event.action)}
+      </Link>
       <span className="truncate text-muted-foreground text-xs" title={event.description}>
         {event.description}
       </span>

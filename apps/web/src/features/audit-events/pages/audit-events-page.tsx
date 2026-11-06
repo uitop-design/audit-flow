@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { FileSearch, Inbox } from 'lucide-react';
+import { Outlet, useLocation, useMatch, useNavigate } from 'react-router';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { PageHeader } from '@/components/shared/page-header';
@@ -16,6 +17,9 @@ const MAX_SKELETON_ROWS = 10;
 
 export function AuditEventsPage() {
   const { filters, updateFilters, clearFilters } = useAuditEventFilters();
+  const navigate = useNavigate();
+  const { search } = useLocation();
+  const selectedEventId = useMatch('/events/:eventId')?.params.eventId;
   const query = useQuery(auditEventListQuery(toListParams(filters)));
   const list = query.data;
 
@@ -54,6 +58,8 @@ export function AuditEventsPage() {
             isLoading={query.isPending}
             isRefreshing={query.isPlaceholderData}
             skeletonRows={Math.min(filters.limit, MAX_SKELETON_ROWS)}
+            onOpenEvent={(event) => navigate({ pathname: `/events/${event.id}`, search })}
+            selectedEventId={selectedEventId}
           />
           {list ? (
             <TablePagination
@@ -67,6 +73,8 @@ export function AuditEventsPage() {
           ) : null}
         </div>
       )}
+      {/* Event details (nested route) render here as a side panel. */}
+      <Outlet />
     </>
   );
 }

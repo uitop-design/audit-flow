@@ -5,6 +5,7 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
+import type * as React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -29,6 +30,16 @@ interface AuditEventsTableProps {
   /** A new page or filter is loading while the previous rows stay visible. */
   isRefreshing: boolean;
   skeletonRows: number;
+  /** Opens an event's details; rows are clickable as a shortcut for the link in the action cell. */
+  onOpenEvent: (event: AuditEvent) => void;
+  /** The event whose details are open, highlighted in the table. */
+  selectedEventId?: string;
+}
+
+/** Row clicks open details unless the user clicked a control or is selecting text. */
+function isRowActivation(event: React.MouseEvent): boolean {
+  const target = event.target as HTMLElement;
+  return !target.closest('a, button') && !window.getSelection()?.toString();
 }
 
 function isSortField(value: string): value is SortField {
@@ -47,6 +58,8 @@ export function AuditEventsTable({
   isLoading,
   isRefreshing,
   skeletonRows,
+  onOpenEvent,
+  selectedEventId,
 }: AuditEventsTableProps) {
   const sorting: SortingState = [{ id: sortBy, desc: sortOrder === 'desc' }];
 
@@ -116,7 +129,12 @@ export function AuditEventsTable({
                 </TableRow>
               ))
             : table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.id === selectedEventId ? 'selected' : undefined}
+                  className="cursor-pointer"
+                  onClick={(event) => isRowActivation(event) && onOpenEvent(row.original)}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}

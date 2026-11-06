@@ -299,6 +299,28 @@ build via `vite preview`. Deviations and findings:
 **Tests** details render all fields; null fields show an em dash; before/after both, one-sided and
 neither; copy buttons call the clipboard with the exact value; 404 state.
 
+**Outcome ✅** 92 web tests pass (stable over 10 consecutive runs), 143 + 88 API tests. Checked in the
+browser on seed data at desktop and mobile widths. Notes and findings:
+
+- Rows open details through a real link in the Action cell (keyboard and new-tab friendly). A click
+  anywhere else on the row also opens them, unless the user is selecting text or clicked another control.
+  The open row is highlighted. Recent activity on the dashboard links to details as well.
+- Events are immutable, so the detail query never goes stale (`staleTime: Infinity`), and the panel shows
+  the row already loaded in the list instantly while the request completes.
+- On open, focus moves to the panel itself. Radix's default is the first control, which made the "Copy
+  event ID" tooltip pop up unprompted.
+- The JSON viewer uses native `<details>` with no inner scroll region, so it needs no `tabIndex` and no
+  lint suppression. Values render as text; a test confirms markup in a value does not become HTML.
+- **Seed data fix.** The diff exposed partial "after" snapshots (e.g. an expired API key showed "prefix
+  removed"). Seed snapshots now describe the same fields before and after, and an API unit test enforces it.
+- **Browser-only bugs** (jsdom does not apply CSS):
+  - The detail grid column needed `minmax(0,1fr)`; long values pushed the copy button out of view on mobile.
+  - The collapsed-node hint used `group-open:hidden`, which also matched any _open ancestor_, so collapsed
+    nested arrays showed nothing after `[`. It now uses a selector scoped to the node's own `<details>`.
+- **Test harness.** `window.scrollTo` is stubbed (jsdom logged "not implemented" for every navigation).
+  `asyncUtilTimeout` is 3 s, because the first visit to a lazy route compiles its module and occasionally
+  took longer than 1 s in a full run.
+
 ## Phase 8 — Quality and documentation
 
 **Build / verify**

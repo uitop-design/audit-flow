@@ -27,6 +27,18 @@ export const routes: RouteObject[] = [
                 .AuditEventsPage,
             }),
             handle: { title: 'Audit events' } satisfies RouteHandle,
+            children: [
+              {
+                // Details open in a side panel over the list, so filters and scroll position survive.
+                path: ':eventId',
+                lazy: async () => ({
+                  Component: (
+                    await import('@/features/audit-events/pages/audit-event-details-route')
+                  ).AuditEventDetailsRoute,
+                }),
+                handle: { title: 'Event details' } satisfies RouteHandle,
+              },
+            ],
           },
           {
             path: '*',

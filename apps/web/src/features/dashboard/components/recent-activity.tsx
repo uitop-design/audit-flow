@@ -1,4 +1,5 @@
 import { Bot } from 'lucide-react';
+import { Link } from 'react-router';
 import { EventTypeBadge } from '@/features/audit-events/components/event-type-badge';
 import type { AuditEvent } from '@/lib/api/types';
 import { formatDateTime, formatRelativeTime } from '@/lib/format';
@@ -28,7 +29,13 @@ export function RecentActivity({ events }: { events: AuditEvent[] }) {
             <div className="min-w-0 flex-1 space-y-1">
               <p className="text-sm leading-snug">
                 <span className="font-medium">{actor ?? 'System'}</span>{' '}
-                <span className="text-muted-foreground">·</span> {event.description}
+                <span className="text-muted-foreground">·</span>{' '}
+                <Link
+                  to={`/events/${event.id}`}
+                  className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  {event.description}
+                </Link>
               </p>
               <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
                 <EventTypeBadge eventType={event.eventType} />
