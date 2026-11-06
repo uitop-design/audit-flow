@@ -1,5 +1,11 @@
 name: auditflow
 
+# `docker compose up -d` starts only PostgreSQL, for local development with `pnpm dev`.
+# `docker compose --profile full up --build` runs the whole stack in containers:
+#   web (nginx, http://localhost:8080) -> api (NestJS) -> postgres, with migrations applied first.
+
+x-database-url: &database-url postgresql://${POSTGRES_USER:-auditflow}:${POSTGRES_PASSWORD:-auditflow}@postgres:5432/${POSTGRES_DB:-auditflow}
+
 services:
   postgres:
     image: postgres:18-alpine
@@ -20,6 +26,54 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # One-off: applies committed migrations, then exits. Uses the build stage, which has the Prisma CLI;
+  # the runtime image deliberately does not.
+  migrate:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    working_dir: /repo/apps/api
+    command: ["pnpm", "exec", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: *database-url
+      CORS_ORIGINS: http://localhost:${WEB_PORT:-8080}
+      # Swagger is off by default in production; enabled here because this stack is a local demo.
+      SWAGGER_ENABLED: "true"
+      LOG_LEVEL: log
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   postgres-data:

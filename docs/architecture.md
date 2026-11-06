@@ -1,7 +1,8 @@
 # AuditFlow — Architecture
 
-Status: **Phase 0 proposal**. This document describes the target architecture. Sections marked
-_Decision_ record choices made where the brief was ambiguous; they are summarised as ADRs at the end.
+Status: **implemented** (Phases 1–8). Written in Phase 0 and kept up to date as decisions changed.
+Sections marked _Decision_ record choices made where the brief was ambiguous; they are summarised as
+ADRs at the end.
 
 ## 1. Goals and non-goals
 
@@ -506,7 +507,7 @@ real errors.
 | 12  | Own config module (`AppModule.forRoot(config)`)                                           | `@nestjs/config`                                | Config created at startup, so tests can build the app with their own; one dependency fewer   |
 | 13  | Request logging and JSON parsing as Express middleware                                    | Nest interceptor; `app.useBodyParser`           | Covers 404s and parser errors; parser failures get stable, client-safe messages              |
 
-## 9. Known limitations (planned to be documented in README)
+## 9. Known limitations (also listed in the README)
 
 - No authentication or authorization. Ingestion must sit behind a trusted network or gateway before production.
 - `createdAt` is ingestion time. A producer-reported `occurredAt` (untrusted, stored separately) is a

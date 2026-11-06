@@ -1,5 +1,6 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { AppShell } from '@/components/layout/app-shell';
+import { AppLoading } from './app-loading';
 import { NotFoundPage } from './not-found-page';
 import { RouteErrorPage } from './route-error-page';
 import type { RouteHandle } from './route-handle';
@@ -7,6 +8,7 @@ import type { RouteHandle } from './route-handle';
 export const routes: RouteObject[] = [
   {
     element: <AppShell />,
+    hydrateFallbackElement: <AppLoading />,
     children: [
       {
         // Pathless boundary: errors render inside the shell, so navigation stays available.

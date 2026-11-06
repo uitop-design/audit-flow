@@ -1,0 +1,16 @@
+# Keep the build context small and free of local state; images install their own dependencies.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+apps/api/src/generated
+.git
+.github
+.vscode
+.idea
+.env
+.env.*
+!.env.example
+docs
+**/*.log
+**/.DS_Store

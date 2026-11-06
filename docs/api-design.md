@@ -1,7 +1,7 @@
 # AuditFlow — API Design
 
-Status: **Phase 0 proposal**. Swagger generated from the code becomes the authoritative reference
-once implemented. This document is the design contract it must satisfy.
+Status: **implemented**. Swagger UI (`/api/docs`), generated from the code, is the authoritative
+reference. This document records the contract the implementation was built and tested against.
 
 ## 1. Conventions
 

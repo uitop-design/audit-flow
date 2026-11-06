@@ -48,7 +48,8 @@ export function ActivityChart({ days }: { days: AuditEventStats['dailyVolume'] }
               <ChartTooltipContent labelFormatter={(value) => formatUtcDay(String(value))} />
             }
           />
-          <Bar dataKey="count" fill="var(--color-count)" radius={3} />
+          {/* No grow-in animation: it only delays the data (and the brief asks for no unnecessary motion). */}
+          <Bar dataKey="count" fill="var(--color-count)" radius={3} isAnimationActive={false} />
         </BarChart>
       </ChartContainer>
       <figcaption className="text-muted-foreground text-xs">{summary} Days are in UTC.</figcaption>

@@ -336,24 +336,50 @@ browser on seed data at desktop and mobile widths. Notes and findings:
   setup, env vars, API examples, testing, decisions and known limitations, production/security checklist.
 - Final review pass against the brief's Definition of Done, item by item.
 
+**Outcome ✅** Docker, CI, README and screenshots are in place, and every CI step was reproduced locally
+on a clean copy of the repository (only files that would be committed: no `.env`, no generated client).
+Findings:
+
+- **API image 748 MB → 445 MB.** `@prisma/client` lists the Prisma CLI and TypeScript as optional
+  peers, and the lockfile records them as its optional dependencies because they exist in development,
+  so `pnpm deploy --prod` shipped about 300 MB of CLI, Studio and pglite. `--no-optional` removes them.
+  The production dependencies have no optional native packages, and the image was verified by running it.
+- **CI would always have failed the contract check.** Biome reformatted the generated `openapi.json`,
+  so a fresh `pnpm api:types` never matched the committed file (identical content, different formatting).
+  The file is now excluded from Biome like the generated web types.
+- **The clean run also caught an unformatted file.** It had been written after the last local
+  `check:fix`, which is exactly the class of mistake `biome ci` exists for.
+- **Containers verified end to end:**
+  - Startup order is postgres healthy → migrate → API healthy (Docker healthcheck) → web.
+  - Through nginx: ingestion, the seed command, SPA deep links, Swagger, and caching and security
+    headers all work. The browser shows no CSP violations.
+  - A second stack on an empty volume applied both migrations from scratch, and its trigger rejected
+    `UPDATE`.
+- Added a `HydrateFallback` for the first lazy-route load (React Router warned in the production build).
+- The activity chart's grow-in animation is disabled. It only delayed the data, and the brief asks for
+  no unnecessary motion (it also left bars missing in headless screenshots).
+- Screenshots are taken with headless Chrome at 2× from the seeded app: `docs/images/`.
+- **Not verified:** the workflow has not run on GitHub yet, because the repository has no remote.
+  Each of its steps was run locally as described above. Action versions are the current major releases.
+
 ## Definition of Done traceability
 
-| DoD item                                    | Phase                        |
-| ------------------------------------------- | ---------------------------- |
-| Start whole project via documented commands | 1, 8                         |
-| PostgreSQL via Docker Compose               | 1                            |
-| Prisma migrations work                      | 1, 3                         |
-| Demo events seeded                          | 4                            |
-| Ingest via API                              | 3                            |
-| Query with filters/sort/pagination          | 3, 6                         |
-| Inspect individual events                   | 3, 7                         |
-| No modification/deletion through the app    | 3 (tests at HTTP + DB level) |
-| Dashboard shows real API data               | 6                            |
-| Loading/empty/error states                  | 5, 6, 7                      |
-| Backend + frontend tests pass               | 2–7, 8                       |
-| Biome, TypeScript, production builds pass   | every phase, 8               |
-| Swagger available                           | 2, 3                         |
-| README                                      | 8                            |
+| DoD item                                    | Status | Evidence                                                                                              |
+| ------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------- |
+| Start whole project via documented commands | ✅     | README "Getting started" and "Running everything in Docker", both run during development              |
+| PostgreSQL via Docker Compose               | ✅     | `pnpm db:up`; the `postgres` service with healthcheck                                                 |
+| Prisma migrations work                      | ✅     | `db:deploy` locally, in CI and in the container `migrate` job, including from an empty volume         |
+| Demo events seeded                          | ✅     | `pnpm db:seed` (idempotent reset-and-seed), tested for determinism and validity                       |
+| Ingest via API                              | ✅     | `POST /api/v1/audit-events`; integration tests; curl through nginx                                    |
+| Query with filters/sort/pagination          | ✅     | API integration tests, web tests asserting request parameters, browser checks                         |
+| Inspect individual events                   | ✅     | `GET /:id` and the details panel (tests for every field and state)                                    |
+| No modification/deletion through the app    | ✅     | No mutation routes, append-only port, frozen entities, DB trigger (tested via ORM and raw SQL)        |
+| Dashboard shows real API data               | ✅     | `/stats` and `/facets` computed in SQL; no mock data at runtime                                       |
+| Loading/empty/error states                  | ✅     | Skeletons, three empty states, error states with request ID and retry (tested)                        |
+| Backend + frontend tests pass               | ✅     | 143 API unit + 88 API integration + 92 web tests                                                      |
+| Biome, TypeScript, production builds pass   | ✅     | `biome ci`, `pnpm typecheck` and `pnpm build` on a clean checkout                                     |
+| Swagger available                           | ✅     | `/api/docs` and `/api/docs-json`, with a test that every parameter is typed                           |
+| README                                      | ✅     | Overview, screenshots, diagrams, setup, commands, env vars, API, testing, decisions, security, limits |
 
 ## Open questions (resolved with defaults unless you say otherwise)
 

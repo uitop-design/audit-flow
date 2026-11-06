@@ -28,7 +28,9 @@
           }
         },
         "summary": "Report application health and database connectivity",
-        "tags": ["health"]
+        "tags": [
+          "health"
+        ]
       }
     },
     "/api/v1/audit-events": {
@@ -97,7 +99,9 @@
           }
         },
         "summary": "Record an audit event",
-        "tags": ["audit-events"]
+        "tags": [
+          "audit-events"
+        ]
       },
       "get": {
         "operationId": "AuditEventsController_list_v1",
@@ -229,7 +233,14 @@
             "schema": {
               "default": "createdAt",
               "type": "string",
-              "enum": ["createdAt", "eventType", "action", "resourceType", "actorEmail", "source"]
+              "enum": [
+                "createdAt",
+                "eventType",
+                "action",
+                "resourceType",
+                "actorEmail",
+                "source"
+              ]
             }
           },
           {
@@ -239,7 +250,10 @@
             "schema": {
               "default": "desc",
               "type": "string",
-              "enum": ["asc", "desc"]
+              "enum": [
+                "asc",
+                "desc"
+              ]
             }
           }
         ],
@@ -276,7 +290,9 @@
           }
         },
         "summary": "List audit events with filtering, sorting and pagination",
-        "tags": ["audit-events"]
+        "tags": [
+          "audit-events"
+        ]
       }
     },
     "/api/v1/audit-events/stats": {
@@ -306,7 +322,9 @@
           }
         },
         "summary": "Aggregate statistics for the dashboard",
-        "tags": ["audit-events"]
+        "tags": [
+          "audit-events"
+        ]
       }
     },
     "/api/v1/audit-events/facets": {
@@ -336,7 +354,9 @@
           }
         },
         "summary": "Distinct values for filter options",
-        "tags": ["audit-events"]
+        "tags": [
+          "audit-events"
+        ]
       }
     },
     "/api/v1/audit-events/{id}": {
@@ -396,7 +416,9 @@
           }
         },
         "summary": "Get one audit event",
-        "tags": ["audit-events"]
+        "tags": [
+          "audit-events"
+        ]
       }
     }
   },
@@ -415,7 +437,10 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["up", "down"],
+            "enum": [
+              "up",
+              "down"
+            ],
             "example": "up"
           },
           "latencyMs": {
@@ -424,7 +449,9 @@
             "description": "Round-trip time of a trivial query"
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "HealthChecksDto": {
         "type": "object",
@@ -433,14 +460,19 @@
             "$ref": "#/components/schemas/DatabaseCheckDto"
           }
         },
-        "required": ["database"]
+        "required": [
+          "database"
+        ]
       },
       "HealthResponseDto": {
         "type": "object",
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["ok", "error"],
+            "enum": [
+              "ok",
+              "error"
+            ],
             "example": "ok"
           },
           "checks": {
@@ -456,7 +488,12 @@
             "format": "date-time"
           }
         },
-        "required": ["status", "checks", "uptimeSeconds", "timestamp"]
+        "required": [
+          "status",
+          "checks",
+          "uptimeSeconds",
+          "timestamp"
+        ]
       },
       "ValidationIssueDto": {
         "type": "object",
@@ -470,7 +507,10 @@
             "example": "actorEmail must be an email"
           }
         },
-        "required": ["field", "message"]
+        "required": [
+          "field",
+          "message"
+        ]
       },
       "ErrorResponseDto": {
         "type": "object",
@@ -508,7 +548,14 @@
             "format": "date-time"
           }
         },
-        "required": ["statusCode", "error", "message", "path", "requestId", "timestamp"]
+        "required": [
+          "statusCode",
+          "error",
+          "message",
+          "path",
+          "requestId",
+          "timestamp"
+        ]
       },
       "CreateAuditEventDto": {
         "type": "object",
@@ -618,7 +665,13 @@
             "description": "The system that produced the event."
           }
         },
-        "required": ["eventType", "action", "resourceType", "description", "source"]
+        "required": [
+          "eventType",
+          "action",
+          "resourceType",
+          "description",
+          "source"
+        ]
       },
       "AuditEventResponseDto": {
         "type": "object",
@@ -753,7 +806,12 @@
             "description": "0 when there are no results"
           }
         },
-        "required": ["page", "limit", "total", "totalPages"]
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ]
       },
       "AuditEventListResponseDto": {
         "type": "object",
@@ -768,7 +826,10 @@
             "$ref": "#/components/schemas/PaginationMetaDto"
           }
         },
-        "required": ["data", "meta"]
+        "required": [
+          "data",
+          "meta"
+        ]
       },
       "EventTypeCountDto": {
         "type": "object",
@@ -782,7 +843,10 @@
             "example": 52
           }
         },
-        "required": ["eventType", "count"]
+        "required": [
+          "eventType",
+          "count"
+        ]
       },
       "DailyEventCountDto": {
         "type": "object",
@@ -797,7 +861,10 @@
             "example": 23
           }
         },
-        "required": ["date", "count"]
+        "required": [
+          "date",
+          "count"
+        ]
       },
       "AuditEventStatsResponseDto": {
         "type": "object",
@@ -866,35 +933,54 @@
         "type": "object",
         "properties": {
           "eventTypes": {
-            "example": ["AUTH", "PROJECT", "USER"],
+            "example": [
+              "AUTH",
+              "PROJECT",
+              "USER"
+            ],
             "type": "array",
             "items": {
               "type": "string"
             }
           },
           "actions": {
-            "example": ["PROJECT_CREATED", "USER_SIGNED_IN"],
+            "example": [
+              "PROJECT_CREATED",
+              "USER_SIGNED_IN"
+            ],
             "type": "array",
             "items": {
               "type": "string"
             }
           },
           "resourceTypes": {
-            "example": ["API_KEY", "PROJECT", "USER"],
+            "example": [
+              "API_KEY",
+              "PROJECT",
+              "USER"
+            ],
             "type": "array",
             "items": {
               "type": "string"
             }
           },
           "sources": {
-            "example": ["admin-dashboard", "billing-service"],
+            "example": [
+              "admin-dashboard",
+              "billing-service"
+            ],
             "type": "array",
             "items": {
               "type": "string"
             }
           }
         },
-        "required": ["eventTypes", "actions", "resourceTypes", "sources"]
+        "required": [
+          "eventTypes",
+          "actions",
+          "resourceTypes",
+          "sources"
+        ]
       }
     }
   }

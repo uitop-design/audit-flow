@@ -12,7 +12,8 @@
       "!**/dist",
       "!**/coverage",
       "!**/src/generated",
-      "!**/src/lib/api/schema.d.ts"
+      "!**/src/lib/api/schema.d.ts",
+      "!**/apps/api/openapi.json"
     ]
   },
   "formatter": {
